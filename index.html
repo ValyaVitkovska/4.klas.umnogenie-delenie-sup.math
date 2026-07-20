@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Супер Математик - 4 клас</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-y: contain;
+            margin: 0;
+            overflow: hidden;
+            background-color: #1e293b;
+            touch-action: none;
+        }
+        
+        h1, .mario-font {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .math-notebook {
+            background-color: white;
+            background-image: 
+                linear-gradient(#93c5fd 1px, transparent 1px),
+                linear-gradient(90deg, #93c5fd 1px, transparent 1px);
+            background-size: 2.5rem 2.5rem;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 2.5rem;
+            display: grid;
+            grid-template-columns: repeat(20, 2.5rem);
+            grid-auto-rows: 2.5rem;
+            gap: 0;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .math-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0f172a;
+            position: relative;
+        }
+
+        .math-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: rgba(226, 232, 240, 0.6); /* Леко сив фон, за да се вижда полето */
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1d4ed8;
+            outline: 1px dashed rgba(148, 163, 184, 0.6); /* Пунктирана рамка */
+            outline-offset: -2px;
+            padding: 0;
+            margin: 0;
+            cursor: text;
+            position: relative;
+            z-index: 20;
+        }
+
+        .math-input:focus {
+            background-color: #dbeafe;
+            outline: 2px solid #3b82f6;
+            outline-offset: -2px;
+        }
+
+        .math-input.error {
+            color: #ef4444;
+            background-color: #fee2e2;
+        }
+
+        .math-input.carry-over {
+            height: 1.5rem;
+            width: 1.5rem;
+            font-size: 0.9rem;
+            margin: auto;
+            border-radius: 50%;
+            outline: 1px solid #94a3b8;
+            background: #f8fafc;
+            color: #64748b;
+        }
+
+        .math-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #0f172a;
+            z-index: 10;
+        }
+
+        .has-dot::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .pop-anim { animation: pop 0.3s ease; }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        canvas {
+            image-rendering: pixelated;
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        
+        #threeCanvasContainer {
+            width: 100%;
+            height: 200px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer" class="absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none z-10">
+        <div class="text-white mario-font text-2xl drop-shadow-md">
+            <div class="text-yellow-400">МОНЕТИ / ТРУДНОСТ</div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-yellow-400 rounded-full border-2 border-yellow-600 flex items-center justify-center text-xs">🪙</div>
+                <span id="scoreDisplay">0</span>
+            </div>
+        </div>
+        <div class="text-white mario-font text-2xl drop-shadow-md text-right">
+            <div class="text-blue-300">НИВО</div>
+            <div id="levelDisplay">1 - НОВАК</div>
+        </div>
+    </div>
+
+    <div id="startScreen" class="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full flex flex-col max-h-full">
+            <div class="bg-blue-600 p-4 text-center shrink-0">
+                <h1 class="text-3xl text-white drop-shadow-md">СУПЕР МАТЕМАТИКА</h1>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto flex flex-col md:flex-row p-6 gap-6">
+                <!-- Left panel: 3D & Controls -->
+                <div class="flex flex-col items-center gap-4 md:w-1/3">
+                    <div id="threeCanvasContainer" class="bg-blue-50 rounded-xl border border-blue-100 flex-shrink-0"></div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-xl border text-center w-full">
+                        <div class="font-bold text-gray-700 mb-3 text-lg">УПРАВЛЕНИЕ</div>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold">◀</kbd>
+                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold">▶</kbd>
+                                <span class="text-gray-500 font-medium">Движение</span>
+                            </div>
+                            <div class="flex items-center justify-center gap-2">
+                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold text-sm">SPACE / НАГОРЕ</kbd>
+                                <span class="text-gray-500 font-medium">Скок</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right panel: Rules -->
+                <div class="md:w-2/3 flex flex-col justify-center text-gray-700 text-lg space-y-4">
+                    <p class="font-black text-red-600 text-2xl mb-2">Здравей! Аз съм Супер Математик!</p>
+                    <p class="font-medium">За да преминем нивата в 4. клас, трябва да решаваме задачи!</p>
+                    <ul class="space-y-3 bg-gray-50 p-4 rounded-xl border">
+                        <li class="flex items-start gap-2">
+                            <span>📦</span>
+                            <span>Удари <strong class="text-yellow-600">Златно блокче</strong> отдолу за задача по <strong>Умножение</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span>🍄</span>
+                            <span>Сблъскай се с <strong class="text-amber-800">Гъба</strong> за задача по <strong>Деление с опашка</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span>📝</span>
+                            <span>Пиши точно в квадратчетата. За задачите "наум" използвай малките кръгчета отгоре.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span>🔴</span>
+                            <span>Използвай <strong class="text-blue-600">"Режим Точка"</strong> и кликни върху цифра, за да отбележиш заемане.</span>
+                        </li>
+                    </ul>
+                    <p class="bg-purple-100 text-purple-800 p-3 rounded-lg font-bold text-center mt-4 border border-purple-200">
+                        След 50 монети идват задачи с двуцифрени числа!
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-100 border-t shrink-0">
+                <button id="startBtn" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-2xl mario-font rounded-xl shadow-[0_6px_0_#16a34a] active:shadow-[0_0px_0_#16a34a] active:translate-y-[6px] transition-all">
+                    🎮 СТАРТ ИГРА
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mathModal" class="hidden absolute inset-0 bg-black/90 z-40 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-50 rounded-xl max-w-5xl w-full shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="bg-slate-800 p-4 rounded-t-xl flex justify-between items-center text-white shrink-0">
+                <h2 id="mathTitle" class="text-2xl mario-font text-yellow-400">ЗАДАЧА</h2>
+            </div>
+            
+            <div class="p-4 bg-blue-100 border-b border-blue-200 text-slate-700 font-medium text-lg text-center shrink-0" id="mathInstruction">
+                Реши задачата.
+            </div>
+
+            <div class="p-4 md:p-8 overflow-auto flex justify-center items-start bg-slate-200 flex-1">
+                <div id="mathContainer" class="math-notebook"></div>
+            </div>
+
+            <div class="p-4 bg-slate-100 rounded-b-xl shrink-0">
+                <button id="checkBtn" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-2xl mario-font rounded-xl shadow-[0_6px_0_#16a34a] active:shadow-[0_0px_0_#16a34a] active:translate-y-[6px] transition-all">
+                    ✅ ПРОВЕРИ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        function init3D() {
+            try {
+                const container = document.getElementById('threeCanvasContainer');
+                if (!container) return;
+                
+                let cw = container.clientWidth;
+                let ch = container.clientHeight;
+                
+                if (cw === 0) cw = 250;
+                if (ch === 0) ch = 200;
+
+                if (typeof THREE === 'undefined') {
+                    container.innerHTML = '<div style="font-size: 100px; margin-top: 20px;">🦸‍♂️</div>';
+                    return;
+                }
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, cw / ch, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(cw, ch);
+                
+                container.innerHTML = ''; 
+                container.appendChild(renderer.domElement);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 5, 5);
+                scene.add(dirLight);
+
+                const group = new THREE.Group();
+
+                // Материали
+                const redMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+                const blueMat = new THREE.MeshLambertMaterial({ color: 0x0000ff });
+                const skinMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
+                const brownMat = new THREE.MeshLambertMaterial({ color: 0x654321 });
+                const blackMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+                const yellowMat = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+
+                // Крака (Панталони)
+                const legGeo = new THREE.BoxGeometry(0.35, 0.6, 0.35);
+                const leftLeg = new THREE.Mesh(legGeo, blueMat);
+                leftLeg.position.set(-0.25, 0.3, 0);
+                const rightLeg = new THREE.Mesh(legGeo, blueMat);
+                rightLeg.position.set(0.25, 0.3, 0);
+                group.add(leftLeg, rightLeg);
+
+                // Обувки
+                const shoeGeo = new THREE.BoxGeometry(0.4, 0.2, 0.5);
+                const leftShoe = new THREE.Mesh(shoeGeo, brownMat);
+                leftShoe.position.set(-0.25, 0.1, 0.05);
+                const rightShoe = new THREE.Mesh(shoeGeo, brownMat);
+                rightShoe.position.set(0.25, 0.1, 0.05);
+                group.add(leftShoe, rightShoe);
+
+                // Тяло - Гащеризон (Отдолу)
+                const overallsGeo = new THREE.BoxGeometry(1.05, 0.5, 0.6);
+                const overalls = new THREE.Mesh(overallsGeo, blueMat);
+                overalls.position.set(0, 0.75, 0);
+                group.add(overalls);
+
+                // Копчета
+                const btnGeo = new THREE.BoxGeometry(0.15, 0.15, 0.1);
+                const leftBtn = new THREE.Mesh(btnGeo, yellowMat);
+                leftBtn.position.set(-0.3, 0.9, 0.31);
+                const rightBtn = new THREE.Mesh(btnGeo, yellowMat);
+                rightBtn.position.set(0.3, 0.9, 0.31);
+                group.add(leftBtn, rightBtn);
+
+                // Тяло - Блуза (Отгоре)
+                const shirtGeo = new THREE.BoxGeometry(1.0, 0.6, 0.55);
+                const shirt = new THREE.Mesh(shirtGeo, redMat);
+                shirt.position.set(0, 1.2, 0);
+                group.add(shirt);
+
+                // Ръце
+                const armGeo = new THREE.BoxGeometry(0.3, 0.6, 0.3);
+                const leftArm = new THREE.Mesh(armGeo, redMat);
+                leftArm.position.set(-0.65, 1.1, 0);
+                const rightArm = new THREE.Mesh(armGeo, redMat);
+                rightArm.position.set(0.65, 1.1, 0);
+                group.add(leftArm, rightArm);
+
+                // Длани
+                const handGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                const leftHand = new THREE.Mesh(handGeo, skinMat);
+                leftHand.position.set(-0.65, 0.65, 0);
+                const rightHand = new THREE.Mesh(handGeo, skinMat);
+                rightHand.position.set(0.65, 0.65, 0);
+                group.add(leftHand, rightHand);
+
+                // Глава
+                const headGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+                const head = new THREE.Mesh(headGeo, skinMat);
+                head.position.set(0, 1.8, 0);
+                group.add(head);
+
+                // Нос
+                const noseGeo = new THREE.BoxGeometry(0.3, 0.25, 0.3);
+                const nose = new THREE.Mesh(noseGeo, skinMat);
+                nose.position.set(0, 1.75, 0.45);
+                group.add(nose);
+
+                // Мустак
+                const mustacheGeo = new THREE.BoxGeometry(0.6, 0.15, 0.1);
+                const mustache = new THREE.Mesh(mustacheGeo, blackMat);
+                mustache.position.set(0, 1.6, 0.45);
+                group.add(mustache);
+
+                // Очи
+                const eyeGeo = new THREE.BoxGeometry(0.1, 0.2, 0.1);
+                const leftEye = new THREE.Mesh(eyeGeo, blackMat);
+                leftEye.position.set(-0.15, 1.9, 0.41);
+                const rightEye = new THREE.Mesh(eyeGeo, blackMat);
+                rightEye.position.set(0.15, 1.9, 0.41);
+                group.add(leftEye, rightEye);
+
+                // Шапка (Основа и козирка)
+                const hatGeo = new THREE.BoxGeometry(0.85, 0.25, 0.85);
+                const hat = new THREE.Mesh(hatGeo, redMat);
+                hat.position.set(0, 2.3, 0);
+                const visorGeo = new THREE.BoxGeometry(0.85, 0.1, 0.4);
+                const visor = new THREE.Mesh(visorGeo, redMat);
+                visor.position.set(0, 2.2, 0.4);
+                group.add(hat, visor);
+
+                scene.add(group);
+                
+                // Центриране на героя спрямо камерата
+                group.position.y = -1.2;
+                camera.position.z = 6;
+
+                let animationFrameId;
+                const animate3D = function () {
+                    animationFrameId = requestAnimationFrame(animate3D);
+                    group.rotation.y += 0.02; // Въртене
+                    renderer.render(scene, camera);
+                };
+                animate3D();
+
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    cancelAnimationFrame(animationFrameId);
+                });
+            } catch (e) {
+                console.error("ThreeJS грешка:", e);
+                const container = document.getElementById('threeCanvasContainer');
+                if(container) container.innerHTML = '<div style="font-size: 100px; margin-top: 20px;">🦸‍♂️</div>';
+            }
+        }
+
+        const MathGen = {
+            // Деление без празни редове
+            createDivision: function(dividend, divisor) {
+                let cells = [];
+                let divStr = dividend.toString();
+                let quotient = Math.floor(dividend / divisor).toString();
+                let currentVal = "";
+                let row = 2; 
+                let step = 1;
+
+                // Основен ред (напр. 156 : 3 = )
+                for(let i=0; i<divStr.length; i++) cells.push({row: row, col: i+2, text: divStr[i]});
+                cells.push({row: row, col: divStr.length+2, text: ':'});
+                let divLen = divisor.toString().length;
+                for(let i=0; i<divLen; i++) cells.push({row: row, col: divStr.length+3+i, text: divisor.toString()[i]});
+                cells.push({row: row, col: divStr.length+3+divLen, text: '='});
+                let qStartCol = divStr.length+4+divLen;
+                
+                // Генерираме предварително ВСИЧКИ полета за частното (отговора)
+                for(let i=0; i<quotient.length; i++) {
+                     cells.push({row: 2, col: qStartCol + i, input: true, expected: quotient[i], isAnswer: true, tabIndex: step++});
+                }
+                
+                row = 3; 
+                let isFirstStep = true;
+                let qIndex = 0;
+
+                for(let i=0; i<divStr.length; i++) {
+                    currentVal += divStr[i];
+                    let num = parseInt(currentVal);
+                    let endCol = i + 2;
+
+                    if (num >= divisor || (!isFirstStep && i === divStr.length - 1) || (num === 0 && currentVal.length > 0 && !isFirstStep)) {
+                        let q = Math.floor(num / divisor);
+                        let sub = (q * divisor).toString();
+                        let rem = (num - q * divisor);
+
+                        // Частното вече е генерирано горе, така че тук само отчитаме стъпката
+                        qIndex++;
+
+                        // Умалител (на същия ред като минуса)
+                        let subStartCol = endCol - sub.length + 1;
+                        cells.push({row: row, col: subStartCol - 1, text: '-'});
+                        for(let j=0; j<sub.length; j++) cells.push({row: row, col: subStartCol + j, input: true, expected: sub[j], tabIndex: step++});
+                        
+                        // Чертата (дължината се смята само от реалното число, без водещи нули)
+                        let activeLen = num.toString().length; 
+                        if(activeLen === 0) activeLen = 1;
+                        let lineSpan = Math.max(activeLen, sub.length);
+                        cells.push({row: row, col: endCol - lineSpan + 1, isLine: true, span: lineSpan});
+                        
+                        row++; // Веднага на следващия ред за остатъка
+
+                        let isFinalStep = (i === divStr.length - 1);
+                        let remStr = rem.toString();
+                        if(rem === 0 && !isFinalStep) remStr = ""; 
+                        let remStartCol = endCol - remStr.length + 1;
+
+                        if (remStr !== "") {
+                            for(let j=0; j<remStr.length; j++) cells.push({row: row, col: remStartCol + j, input: true, expected: remStr[j], tabIndex: step++});
+                        }
+
+                        // Сваляне на следваща цифра
+                        if (!isFinalStep) {
+                            let bringDown = divStr[i+1];
+                            cells.push({row: row, col: endCol + 1, input: true, expected: bringDown, tabIndex: step++});
+                            row++; // Увеличаваме реда отново, за да може следващото изваждане да е отдолу!
+                        }
+
+                        currentVal = remStr;
+                        isFirstStep = false;
+                    } else if (!isFirstStep) {
+                        qIndex++;
+                        if (i < divStr.length - 1) {
+                            let nextBringDown = divStr[i+1];
+                            cells.push({row: row - 1, col: endCol + 1, input: true, expected: nextBringDown, tabIndex: step++});
+                        }
+                    }
+                }
+                return cells;
+            },
+
+            // Умножение на един ред
+            createMultiplication: function(num1, num2) {
+                let cells = [];
+                let str1 = num1.toString();
+                let str2 = num2.toString();
+                
+                let maxProdLen = (num1 * num2).toString().length;
+                let extraLeft = Math.max(2, maxProdLen - str1.length + 1); 
+                let startCol = extraLeft + 2; 
+
+                // Ред 1: Полета "Наум" (само над първия множител)
+                for(let i=0; i<str1.length; i++) {
+                    cells.push({row: 1, col: startCol + i, input: true, isCarry: true, expected: ''});
+                }
+                
+                // Ред 2: Умножение (напр. 34 • 12)
+                for(let i=0; i<str1.length; i++) cells.push({row: 2, col: startCol + i, text: str1[i]});
+                
+                let dotCol = startCol + str1.length;
+                cells.push({row: 2, col: dotCol, text: '•'}); // Знак за умножение
+                
+                let startCol2 = dotCol + 1;
+                for(let i=0; i<str2.length; i++) cells.push({row: 2, col: startCol2 + i, text: str2[i]});
+                
+                let totalLen = str1.length + 1 + str2.length;
+                cells.push({row: 2, col: startCol, isLine: true, span: totalLen});
+
+                let row = 3;
+                let endCol1 = startCol + str1.length - 1;
+                let step = 1;
+
+                if (str2.length === 1) {
+                    let ans = (num1 * num2).toString();
+                    for(let i=ans.length-1; i>=0; i--) {
+                        let col = endCol1 - ans.length + 1 + i;
+                        cells.push({row: row, col: col, input: true, expected: ans[i], tabIndex: step++});
+                    }
+                } else {
+                    let partials = [];
+                    // Смятаме първо с най-дясната цифра
+                    for(let i=str2.length-1; i>=0; i--) {
+                        let digit = parseInt(str2[i]);
+                        let p = (num1 * digit).toString();
+                        partials.push(p);
+                        
+                        let shift = (str2.length - 1 - i); 
+                        
+                        for(let j=p.length-1; j>=0; j--) {
+                            let col = endCol1 - shift - p.length + 1 + j;
+                            cells.push({row: row, col: col, input: true, expected: p[j], tabIndex: step++});
+                        }
+                        if (i === 0) { 
+                            let col = endCol1 - shift - p.length;
+                            cells.push({row: row, col: col, text: '+'});
+                        }
+                        row++;
+                    }
+                    
+                    let lastPartial = partials[partials.length-1];
+                    let maxShift = str2.length - 1;
+                    let leftmostCol = endCol1 - maxShift - lastPartial.length;
+                    let rightmostCol = endCol1;
+                    cells.push({row: row - 1, col: leftmostCol, isLine: true, span: (rightmostCol - leftmostCol + 1)});
+                    
+                    let ans = (num1 * num2).toString();
+                    for(let i=ans.length-1; i>=0; i--) {
+                        let col = endCol1 - ans.length + 1 + i;
+                        cells.push({row: row, col: col, input: true, expected: ans[i], tabIndex: step++});
+                    }
+                }
+                return cells;
+            }
+        };
+
+        const MathUI = {
+            modal: document.getElementById('mathModal'),
+            container: document.getElementById('mathContainer'),
+            title: document.getElementById('mathTitle'),
+            instruction: document.getElementById('mathInstruction'),
+            btnCheck: document.getElementById('checkBtn'),
+            currentEnemyOrBlock: null,
+
+            init: function() {
+                this.btnCheck.addEventListener('click', () => this.validate());
+            },
+
+            open: function(type, entity) {
+                this.currentEnemyOrBlock = entity;
+                this.container.innerHTML = '';
+                
+                let cellsData = [];
+                let isAdvanced = Game.score >= 50; 
+
+                if (type === 'division') {
+                    this.title.innerText = "🍄 ВРАГ: ДЕЛЕНИЕ С ОПАШКА";
+                    this.instruction.innerText = "Раздели числата. Кликни върху цифра, за да поставиш точка за заемане!";
+                    
+                    let divisor, quotient;
+                    if (isAdvanced) {
+                        divisor = Math.floor(Math.random() * 80) + 11; 
+                        quotient = Math.floor(Math.random() * 90) + 11;
+                    } else {
+                        divisor = Math.random() < 0.7 ? Math.floor(Math.random() * 8) + 2 : Math.floor(Math.random() * 10) + 11;
+                        quotient = Math.floor(Math.random() * 90) + 11; 
+                    }
+                    cellsData = MathGen.createDivision(divisor * quotient, divisor);
+                } else {
+                    this.title.innerText = "❓ БЛОКЧЕ: УМНОЖЕНИЕ";
+                    this.instruction.innerText = "Умножи числата. Най-горният ред е за числата 'наум'.";
+                    
+                    if (isAdvanced) {
+                        cellsData = MathGen.createMultiplication(Math.floor(Math.random() * 90) + 10, Math.floor(Math.random() * 90) + 10);
+                    } else {
+                        if (Math.random() < 0.6) {
+                            cellsData = MathGen.createMultiplication(Math.floor(Math.random() * 900) + 100, Math.floor(Math.random() * 8) + 2);
+                        } else {
+                            cellsData = MathGen.createMultiplication(Math.floor(Math.random() * 90) + 10, Math.floor(Math.random() * 20) + 11);
+                        }
+                    }
+                }
+
+                cellsData.forEach(data => {
+                    let cell = document.createElement('div');
+                    cell.className = 'math-cell';
+                    cell.style.gridRow = data.row;
+                    cell.style.gridColumn = data.col;
+                    
+                    if (data.span) cell.style.gridColumn = `${data.col} / span ${data.span}`;
+
+                    if (data.isLine) {
+                        cell.style.pointerEvents = 'none';
+                        let line = document.createElement('div');
+                        line.className = 'math-line';
+                        cell.appendChild(line);
+                    } else if (data.input) {
+                        let inp = document.createElement('input');
+                        inp.type = "tel"; 
+                        inp.maxLength = 1;
+                        inp.className = `math-input ${data.isCarry ? 'carry-over' : ''}`;
+                        inp.dataset.expected = data.expected;
+
+                        // Автоматичен фокус (Smart Focus) - премества курсора след въвеждане
+                        inp.addEventListener('input', function() {
+                            this.classList.remove('error');
+                            if(this.value.length === 1) {
+                                let allInputs = Array.from(MathUI.container.querySelectorAll('.math-input'));
+                                let currentIndex = allInputs.indexOf(this);
+                                for (let i = currentIndex + 1; i < allInputs.length; i++) {
+                                    if (allInputs[i].value === '' && !allInputs[i].classList.contains('carry-over')) {
+                                        allInputs[i].focus();
+                                        break;
+                                    }
+                                }
+                            }
+                        });
+
+                        inp.addEventListener('focus', function() {
+                            this.select();
+                        });
+
+                        cell.appendChild(inp);
+                    } else if (data.text) {
+                        let span = document.createElement('span');
+                        span.innerText = data.text;
+                        span.style.position = 'relative';
+                        span.style.display = 'inline-block';
+                        
+                        // Поставяне на червена точка при клик върху цифра
+                        if(/\d/.test(data.text)) {
+                            span.style.cursor = "pointer";
+                            span.title = "Кликни за точка (заемане)";
+                            span.addEventListener('click', () => {
+                                span.classList.toggle('has-dot');
+                            });
+                        }
+                        cell.appendChild(span);
+                    }
+                    this.container.appendChild(cell);
+                });
+
+                this.modal.classList.remove('hidden');
+                this.modal.classList.add('flex');
+                setTimeout(() => {
+                    this.modal.classList.remove('opacity-0');
+                    // Фокус върху първото поле автоматично
+                    let firstInp = this.container.querySelector('.math-input:not(.carry-over)');
+                    if(firstInp) firstInp.focus();
+                }, 10);
+            },
+
+            validate: function() {
+                let inputs = this.container.querySelectorAll('input:not(.carry-over)');
+                let allCorrect = true;
+
+                inputs.forEach(inp => {
+                    if (inp.value !== inp.dataset.expected) {
+                        allCorrect = false;
+                        inp.classList.add('error');
+                        inp.value = '';
+                    }
+                });
+
+                if (allCorrect) {
+                    this.success();
+                } else {
+                    this.btnCheck.innerHTML = '❌ ИМА ГРЕШКА! Опитай пак!';
+                    this.btnCheck.classList.replace('bg-green-500', 'bg-red-500');
+                    setTimeout(() => {
+                        this.btnCheck.innerHTML = '✅ ПРОВЕРИ';
+                        this.btnCheck.classList.replace('bg-red-500', 'bg-green-500');
+                    }, 2000);
+                }
+            },
+
+            success: function() {
+                this.modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    this.modal.classList.add('hidden');
+                    this.modal.classList.remove('flex');
+                    if (this.currentEnemyOrBlock) {
+                        if (this.currentEnemyOrBlock.type === 'enemy') {
+                            this.currentEnemyOrBlock.active = false;
+                            Game.addScore(5);
+                        } else if (this.currentEnemyOrBlock.type === 'block') {
+                            this.currentEnemyOrBlock.hit = true;
+                            Game.addScore(10);
+                        }
+                    }
+                    Game.paused = false;
+                }, 300);
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const Game = {
+            // ФИКСИРАНА резолюция за играта (предотвратява бъга с липсващата земя)
+            width: 1280,
+            height: 720,
+            score: 0,
+            paused: true,
+            cameraX: 0,
+            keys: {},
+            lastTime: 0,
+
+            init: function() {
+                // Настройваме canvas-а към фиксираната резолюция
+                canvas.width = this.width;
+                canvas.height = this.height;
+                ctx.imageSmoothingEnabled = false;
+                
+                window.addEventListener('keydown', e => this.keys[e.code] = true);
+                window.addEventListener('keyup', e => this.keys[e.code] = false);
+
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    document.getElementById('startScreen').style.display = 'none';
+                    this.paused = false;
+                    requestAnimationFrame(t => this.loop(t));
+                });
+
+                MathUI.init();
+                this.generateLevel();
+                init3D(); 
+            },
+
+            addScore: function(amount) {
+                this.score += amount;
+                const scoreEl = document.getElementById('scoreDisplay');
+                scoreEl.innerText = this.score;
+                scoreEl.classList.remove('pop-anim');
+                void scoreEl.offsetWidth;
+                scoreEl.classList.add('pop-anim');
+
+                let levelTxt = "1 - НОВАК";
+                if(this.score >= 50) levelTxt = "2 - МАЙСТОР";
+                if(this.score >= 100) levelTxt = "3 - ЕКСПЕРТ";
+                document.getElementById('levelDisplay').innerText = levelTxt;
+            },
+
+            generateLevel: function() {
+                this.blocks = [];
+                this.enemies = [];
+                
+                // Земя (генерира се спрямо фиксираната височина 720)
+                let groundY = this.height - 40;
+                for(let i=0; i<150; i++) {
+                    this.blocks.push({ x: i*40, y: groundY, w: 40, h: 40, type: 'ground' });
+                }
+
+                // Платформи и врагове
+                for(let i=1; i<30; i++) {
+                    let startX = i * 400 + Math.random() * 200;
+                    this.blocks.push({ x: startX, y: groundY - 150, w: 40, h: 40, type: 'block', hit: false });
+                    this.blocks.push({ x: startX - 40, y: groundY - 150, w: 40, h: 40, type: 'brick' });
+                    this.blocks.push({ x: startX + 40, y: groundY - 150, w: 40, h: 40, type: 'brick' });
+                    
+                    if (Math.random() > 0.3) {
+                        this.enemies.push({ x: startX + 200, y: groundY - 30, w: 30, h: 30, vx: -1, type: 'enemy', active: true });
+                    }
+                }
+            },
+
+            player: {
+                x: 100, y: 100, w: 30, h: 40, vx: 0, vy: 0, speed: 6, jumpForce: -13, grounded: false
+            },
+
+            update: function() {
+                if(this.paused) return;
+
+                this.player.vy += 0.6; // Гравитация
+                
+                if (this.keys['ArrowLeft']) this.player.vx = -this.player.speed;
+                else if (this.keys['ArrowRight']) this.player.vx = this.player.speed;
+                else this.player.vx = 0;
+
+                if ((this.keys['Space'] || this.keys['ArrowUp']) && this.player.grounded) {
+                    this.player.vy = this.player.jumpForce;
+                    this.player.grounded = false;
+                }
+
+                this.player.x += this.player.vx;
+                this.player.y += this.player.vy;
+
+                // Камера
+                if (this.player.x > this.cameraX + this.width / 2.5) {
+                    this.cameraX = this.player.x - this.width / 2.5;
+                }
+                if (this.cameraX < 0) this.cameraX = 0;
+                if (this.player.x < 0) this.player.x = 0;
+
+                // Колизии с блокове
+                this.player.grounded = false;
+                for (let b of this.blocks) {
+                    if (this.checkCollision(this.player, b)) {
+                        // Удар отгоре
+                        if (this.player.vy > 0 && this.player.y + this.player.h - this.player.vy <= b.y) {
+                            this.player.grounded = true;
+                            this.player.vy = 0;
+                            this.player.y = b.y - this.player.h;
+                        } 
+                        // Удар отдолу
+                        else if (this.player.vy < 0 && this.player.y - this.player.vy >= b.y + b.h) {
+                            this.player.vy = 0;
+                            this.player.y = b.y + b.h;
+                            if (b.type === 'block' && !b.hit) {
+                                this.paused = true;
+                                MathUI.open('multiplication', b);
+                            }
+                        } 
+                        // Удар отстрани
+                        else {
+                            if (this.player.vx > 0) this.player.x = b.x - this.player.w;
+                            if (this.player.vx < 0) this.player.x = b.x + b.w;
+                        }
+                    }
+                }
+
+                // Врагове
+                for (let e of this.enemies) {
+                    if (!e.active) continue;
+                    e.x += e.vx;
+                    
+                    for (let b of this.blocks) {
+                        if (b.y <= e.y && this.checkCollision(e, b)) {
+                            e.vx *= -1;
+                            break;
+                        }
+                    }
+
+                    if (this.checkCollision(this.player, e)) {
+                        this.paused = true;
+                        MathUI.open('division', e);
+                        this.player.x -= 15; // Отместване назад след удар
+                    }
+                }
+
+                // Пропадане (ако се случи)
+                if (this.player.y > this.height) {
+                    this.player.x = this.cameraX + 100;
+                    this.player.y = 100;
+                    this.player.vy = 0;
+                }
+            },
+
+            checkCollision: function(r1, r2) {
+                return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
+                       r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
+            },
+
+            draw: function() {
+                // Небе
+                ctx.fillStyle = '#5c94fc';
+                ctx.fillRect(0, 0, this.width, this.height);
+
+                ctx.save();
+                ctx.translate(-this.cameraX, 0);
+
+                // Блокове
+                for (let b of this.blocks) {
+                    if (b.type === 'ground') {
+                        ctx.fillStyle = '#c84c0c';
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                        ctx.fillStyle = '#fc9838';
+                        ctx.fillRect(b.x, b.y, b.w, 4);
+                    } else if (b.type === 'brick') {
+                        ctx.fillStyle = '#a0522d'; // По-тъмно кафяво
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                        ctx.strokeStyle = '#000';
+                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+                        // Шарка на тухла
+                        ctx.beginPath();
+                        ctx.moveTo(b.x, b.y + b.h/2);
+                        ctx.lineTo(b.x + b.w, b.y + b.h/2);
+                        ctx.moveTo(b.x + b.w/2, b.y);
+                        ctx.lineTo(b.x + b.w/2, b.y + b.h/2);
+                        ctx.moveTo(b.x + b.w/4, b.y + b.h/2);
+                        ctx.lineTo(b.x + b.w/4, b.y + b.h);
+                        ctx.moveTo(b.x + b.w*0.75, b.y + b.h/2);
+                        ctx.lineTo(b.x + b.w*0.75, b.y + b.h);
+                        ctx.stroke();
+                    } else if (b.type === 'block') {
+                        ctx.fillStyle = b.hit ? '#a0522d' : '#ffd700'; // Жълто за активно, кафяво за ударено
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                        ctx.strokeStyle = '#000';
+                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+                        if (!b.hit) {
+                            // Очички на блокчето като в Марио
+                            ctx.fillStyle = '#000';
+                            ctx.fillRect(b.x + 6, b.y + 6, 4, 4);
+                            ctx.fillRect(b.x + b.w - 10, b.y + 6, 4, 4);
+                            
+                            ctx.fillStyle = '#d2691e'; // Тъмно оранжево за питанката
+                            ctx.font = 'bold 28px "Impact"';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('?', b.x + b.w/2, b.y + b.h/2 + 2);
+                        }
+                    }
+                }
+
+                // Врагове
+                for (let e of this.enemies) {
+                    if (e.active) {
+                        ctx.fillStyle = '#e84c0c';
+                        ctx.beginPath();
+                        ctx.arc(e.x + e.w/2, e.y + e.h, e.w/2, Math.PI, 0);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(e.x + 5, e.y + e.h - 10, e.w - 10, 10);
+                        // Очи
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(e.x + 8, e.y + e.h - 15, 4, 8);
+                        ctx.fillRect(e.x + 18, e.y + e.h - 15, 4, 8);
+                    }
+                }
+
+                // Играч
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(this.player.x + 5, this.player.y, 20, 15);
+                ctx.fillStyle = '#ffcc99'; 
+                ctx.fillRect(this.player.x + 5, this.player.y + 15, 20, 10);
+                ctx.fillStyle = '#0000ff'; 
+                ctx.fillRect(this.player.x, this.player.y + 25, 30, 15);
+
+                ctx.restore();
+            },
+
+            loop: function(timestamp) {
+                let dt = timestamp - this.lastTime;
+                this.lastTime = timestamp;
+
+                this.update();
+                this.draw();
+
+                requestAnimationFrame(t => this.loop(t));
+            }
+        };
+
+        window.onload = () => Game.init();
+    </script>
+</body>
+</html>
