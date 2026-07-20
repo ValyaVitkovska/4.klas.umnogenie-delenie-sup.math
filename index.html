@@ -55,12 +55,12 @@
             width: 100%;
             height: 100%;
             border: none;
-            background-color: rgba(226, 232, 240, 0.6); /* Леко сив фон, за да се вижда полето */
+            background-color: rgba(226, 232, 240, 0.4);
             text-align: center;
             font-size: 1.5rem;
             font-weight: bold;
             color: #1d4ed8;
-            outline: 1px dashed rgba(148, 163, 184, 0.6); /* Пунктирана рамка */
+            outline: 1px dashed rgba(148, 163, 184, 0.8);
             outline-offset: -2px;
             padding: 0;
             margin: 0;
@@ -98,17 +98,18 @@
             width: 100%;
             height: 2px;
             background-color: #0f172a;
-            z-index: 10;
+            z-index: 5;
+            pointer-events: none; /* Пропуска кликовете през чертата */
         }
 
         .has-dot::before {
             content: '';
             position: absolute;
-            top: -4px;
+            top: -6px;
             left: 50%;
             transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             background-color: #ef4444;
             border-radius: 50%;
             z-index: 20;
@@ -121,18 +122,20 @@
         canvas {
             image-rendering: pixelated;
             display: block;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
         
         #threeCanvasContainer {
             width: 100%;
+            max-width: 200px;
             height: 200px;
             min-height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -152,70 +155,72 @@
         </div>
     </div>
 
-    <div id="startScreen" class="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full flex flex-col max-h-full">
-            <div class="bg-blue-600 p-4 text-center shrink-0">
-                <h1 class="text-3xl text-white drop-shadow-md">СУПЕР МАТЕМАТИКА</h1>
+    <div id="startScreen" class="absolute inset-0 bg-slate-900 flex items-center justify-center z-50 p-2 md:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-5xl w-full flex flex-col m-auto">
+            <!-- Синият панел заглавие - с фиксирана минимална височина за да не се сбутва -->
+            <div class="bg-blue-600 p-4 md:p-6 text-center flex-none min-h-[80px] flex items-center justify-center">
+                <h1 class="text-3xl md:text-5xl text-white drop-shadow-md mario-font leading-tight">СУПЕР МАТЕМАТИКА</h1>
             </div>
             
-            <div class="flex-1 overflow-y-auto flex flex-col md:flex-row p-6 gap-6">
-                <!-- Left panel: 3D & Controls -->
-                <div class="flex flex-col items-center gap-4 md:w-1/3">
-                    <div id="threeCanvasContainer" class="bg-blue-50 rounded-xl border border-blue-100 flex-shrink-0"></div>
+            <div class="flex-1 flex flex-col md:flex-row items-stretch p-4 md:p-8 gap-6 md:gap-10">
+                
+                <!-- Лява колона: 3D Герой и Управление -->
+                <div class="flex flex-col items-center justify-center gap-6 w-full md:w-1/3 flex-none">
+                    <div id="threeCanvasContainer" class="bg-blue-50 rounded-2xl border-4 border-blue-200 shadow-inner w-full">
+                        <div style="font-size: 80px;" id="heroFallback">🦸‍♂️</div>
+                    </div>
                     
-                    <div class="bg-gray-50 p-4 rounded-xl border text-center w-full">
-                        <div class="font-bold text-gray-700 mb-3 text-lg">УПРАВЛЕНИЕ</div>
+                    <div class="bg-slate-50 p-4 rounded-xl border-2 border-slate-200 text-center w-full shadow-sm">
+                        <div class="font-bold text-slate-700 mb-3 text-lg mario-font">УПРАВЛЕНИЕ</div>
                         <div class="flex flex-col gap-3">
                             <div class="flex items-center justify-center gap-2">
-                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold">◀</kbd>
-                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold">▶</kbd>
-                                <span class="text-gray-500 font-medium">Движение</span>
+                                <kbd class="px-3 py-1 bg-white border border-slate-300 rounded shadow-sm text-slate-700 font-bold">◀</kbd>
+                                <kbd class="px-3 py-1 bg-white border border-slate-300 rounded shadow-sm text-slate-700 font-bold">▶</kbd>
+                                <span class="text-slate-500 font-medium ml-2 text-sm md:text-base">Движение</span>
                             </div>
                             <div class="flex items-center justify-center gap-2">
-                                <kbd class="px-3 py-1 bg-white border rounded-lg shadow-sm text-gray-700 font-bold text-sm">SPACE / НАГОРЕ</kbd>
-                                <span class="text-gray-500 font-medium">Скок</span>
+                                <kbd class="px-3 py-1 bg-white border border-slate-300 rounded shadow-sm text-slate-700 font-bold text-xs md:text-sm">SPACE / НАГОРЕ</kbd>
+                                <span class="text-slate-500 font-medium ml-2 text-sm md:text-base">Скок</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right panel: Rules -->
-                <div class="md:w-2/3 flex flex-col justify-center text-gray-700 text-lg space-y-4">
-                    <p class="font-black text-red-600 text-2xl mb-2">Здравей! Аз съм Супер Математик!</p>
-                    <p class="font-medium">За да преминем нивата в 4. клас, трябва да решаваме задачи!</p>
-                    <ul class="space-y-3 bg-gray-50 p-4 rounded-xl border">
-                        <li class="flex items-start gap-2">
-                            <span>📦</span>
-                            <span>Удари <strong class="text-yellow-600">Златно блокче</strong> отдолу за задача по <strong>Умножение</strong>.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span>🍄</span>
-                            <span>Сблъскай се с <strong class="text-amber-800">Гъба</strong> за задача по <strong>Деление с опашка</strong>.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span>📝</span>
-                            <span>Пиши точно в квадратчетата. За задачите "наум" използвай малките кръгчета отгоре.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span>🔴</span>
-                            <span>Използвай <strong class="text-blue-600">"Режим Точка"</strong> и кликни върху цифра, за да отбележиш заемане.</span>
-                        </li>
-                    </ul>
-                    <p class="bg-purple-100 text-purple-800 p-3 rounded-lg font-bold text-center mt-4 border border-purple-200">
+                <!-- Дясна колона: Правила -->
+                <div class="w-full md:w-2/3 flex flex-col justify-center space-y-4 md:space-y-6">
+                    <h2 class="font-black text-red-600 text-2xl md:text-3xl">Здравей! Аз съм Супер Математик!</h2>
+                    <p class="text-slate-600 font-medium text-base md:text-lg">За да преминем нивата в 4. клас, трябва да решаваме задачи!</p>
+                    
+                    <div class="space-y-4 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200 shadow-sm text-base md:text-lg">
+                        <div class="flex items-start gap-4">
+                            <span class="text-3xl shrink-0">🟨</span>
+                            <span class="text-slate-700 mt-1">Удари <strong class="text-yellow-600">Жълто блокче</strong> отдолу за <strong>задача за Умножение</strong>.</span>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="text-3xl shrink-0">🍄</span>
+                            <span class="text-slate-700 mt-1">Сблъскай се с <strong class="text-amber-800">Гъба</strong> за <strong>задача за Деление с опашка</strong>.</span>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="text-3xl shrink-0">🔴</span>
+                            <span class="text-slate-700 mt-1"><strong>Кликни върху цифра</strong> от условието, за да поставиш <strong>червена точка</strong> (когато заемаш).</span>
+                        </div>
+                    </div>
+
+                    <p class="bg-purple-100 text-purple-800 p-3 rounded-lg font-bold text-center border-2 border-purple-200 text-sm md:text-base mt-auto">
                         След 50 монети идват задачи с двуцифрени числа!
                     </p>
                 </div>
             </div>
 
-            <div class="p-4 bg-gray-100 border-t shrink-0">
-                <button id="startBtn" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-2xl mario-font rounded-xl shadow-[0_6px_0_#16a34a] active:shadow-[0_0px_0_#16a34a] active:translate-y-[6px] transition-all">
+            <div class="p-4 md:p-6 bg-slate-100 border-t-2 flex-none">
+                <button id="startBtn" class="w-full py-4 md:py-5 bg-green-500 hover:bg-green-600 text-white text-2xl md:text-3xl mario-font rounded-xl shadow-[0_8px_0_#16a34a] active:shadow-[0_0px_0_#16a34a] active:translate-y-[8px] transition-all">
                     🎮 СТАРТ ИГРА
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="mathModal" class="hidden absolute inset-0 bg-black/90 z-40 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div id="mathModal" class="hidden absolute inset-0 bg-slate-900/95 z-40 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-slate-50 rounded-xl max-w-5xl w-full shadow-2xl flex flex-col max-h-[95vh]">
             <div class="bg-slate-800 p-4 rounded-t-xl flex justify-between items-center text-white shrink-0">
                 <h2 id="mathTitle" class="text-2xl mario-font text-yellow-400">ЗАДАЧА</h2>
@@ -243,23 +248,15 @@
         function init3D() {
             try {
                 const container = document.getElementById('threeCanvasContainer');
-                if (!container) return;
+                if (!container || typeof THREE === 'undefined') return;
                 
-                let cw = container.clientWidth;
-                let ch = container.clientHeight;
-                
-                if (cw === 0) cw = 250;
-                if (ch === 0) ch = 200;
-
-                if (typeof THREE === 'undefined') {
-                    container.innerHTML = '<div style="font-size: 100px; margin-top: 20px;">🦸‍♂️</div>';
-                    return;
-                }
+                let modelW = 200;
+                let modelH = 200;
 
                 const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(45, cw / ch, 0.1, 1000);
+                const camera = new THREE.PerspectiveCamera(45, modelW / modelH, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                renderer.setSize(cw, ch);
+                renderer.setSize(modelW, modelH);
                 
                 container.innerHTML = ''; 
                 container.appendChild(renderer.domElement);
@@ -280,103 +277,74 @@
                 const blackMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
                 const yellowMat = new THREE.MeshLambertMaterial({ color: 0xffff00 });
 
-                // Крака (Панталони)
+                // Крака
                 const legGeo = new THREE.BoxGeometry(0.35, 0.6, 0.35);
-                const leftLeg = new THREE.Mesh(legGeo, blueMat);
-                leftLeg.position.set(-0.25, 0.3, 0);
-                const rightLeg = new THREE.Mesh(legGeo, blueMat);
-                rightLeg.position.set(0.25, 0.3, 0);
+                const leftLeg = new THREE.Mesh(legGeo, blueMat); leftLeg.position.set(-0.25, 0.3, 0);
+                const rightLeg = new THREE.Mesh(legGeo, blueMat); rightLeg.position.set(0.25, 0.3, 0);
                 group.add(leftLeg, rightLeg);
 
                 // Обувки
                 const shoeGeo = new THREE.BoxGeometry(0.4, 0.2, 0.5);
-                const leftShoe = new THREE.Mesh(shoeGeo, brownMat);
-                leftShoe.position.set(-0.25, 0.1, 0.05);
-                const rightShoe = new THREE.Mesh(shoeGeo, brownMat);
-                rightShoe.position.set(0.25, 0.1, 0.05);
+                const leftShoe = new THREE.Mesh(shoeGeo, brownMat); leftShoe.position.set(-0.25, 0.1, 0.05);
+                const rightShoe = new THREE.Mesh(shoeGeo, brownMat); rightShoe.position.set(0.25, 0.1, 0.05);
                 group.add(leftShoe, rightShoe);
 
-                // Тяло - Гащеризон (Отдолу)
+                // Гащеризон
                 const overallsGeo = new THREE.BoxGeometry(1.05, 0.5, 0.6);
-                const overalls = new THREE.Mesh(overallsGeo, blueMat);
-                overalls.position.set(0, 0.75, 0);
+                const overalls = new THREE.Mesh(overallsGeo, blueMat); overalls.position.set(0, 0.75, 0);
                 group.add(overalls);
 
                 // Копчета
                 const btnGeo = new THREE.BoxGeometry(0.15, 0.15, 0.1);
-                const leftBtn = new THREE.Mesh(btnGeo, yellowMat);
-                leftBtn.position.set(-0.3, 0.9, 0.31);
-                const rightBtn = new THREE.Mesh(btnGeo, yellowMat);
-                rightBtn.position.set(0.3, 0.9, 0.31);
+                const leftBtn = new THREE.Mesh(btnGeo, yellowMat); leftBtn.position.set(-0.3, 0.9, 0.31);
+                const rightBtn = new THREE.Mesh(btnGeo, yellowMat); rightBtn.position.set(0.3, 0.9, 0.31);
                 group.add(leftBtn, rightBtn);
 
-                // Тяло - Блуза (Отгоре)
+                // Блуза
                 const shirtGeo = new THREE.BoxGeometry(1.0, 0.6, 0.55);
-                const shirt = new THREE.Mesh(shirtGeo, redMat);
-                shirt.position.set(0, 1.2, 0);
+                const shirt = new THREE.Mesh(shirtGeo, redMat); shirt.position.set(0, 1.2, 0);
                 group.add(shirt);
 
-                // Ръце
+                // Ръкави и ръце
                 const armGeo = new THREE.BoxGeometry(0.3, 0.6, 0.3);
-                const leftArm = new THREE.Mesh(armGeo, redMat);
-                leftArm.position.set(-0.65, 1.1, 0);
-                const rightArm = new THREE.Mesh(armGeo, redMat);
-                rightArm.position.set(0.65, 1.1, 0);
-                group.add(leftArm, rightArm);
-
-                // Длани
+                const leftArm = new THREE.Mesh(armGeo, redMat); leftArm.position.set(-0.65, 1.1, 0);
+                const rightArm = new THREE.Mesh(armGeo, redMat); rightArm.position.set(0.65, 1.1, 0);
                 const handGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-                const leftHand = new THREE.Mesh(handGeo, skinMat);
-                leftHand.position.set(-0.65, 0.65, 0);
-                const rightHand = new THREE.Mesh(handGeo, skinMat);
-                rightHand.position.set(0.65, 0.65, 0);
-                group.add(leftHand, rightHand);
+                const leftHand = new THREE.Mesh(handGeo, skinMat); leftHand.position.set(-0.65, 0.65, 0);
+                const rightHand = new THREE.Mesh(handGeo, skinMat); rightHand.position.set(0.65, 0.65, 0);
+                group.add(leftArm, rightArm, leftHand, rightHand);
 
                 // Глава
                 const headGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-                const head = new THREE.Mesh(headGeo, skinMat);
-                head.position.set(0, 1.8, 0);
+                const head = new THREE.Mesh(headGeo, skinMat); head.position.set(0, 1.8, 0);
                 group.add(head);
 
-                // Нос
+                // Лице (нос, мустак, очи)
                 const noseGeo = new THREE.BoxGeometry(0.3, 0.25, 0.3);
-                const nose = new THREE.Mesh(noseGeo, skinMat);
-                nose.position.set(0, 1.75, 0.45);
-                group.add(nose);
-
-                // Мустак
+                const nose = new THREE.Mesh(noseGeo, skinMat); nose.position.set(0, 1.75, 0.45);
                 const mustacheGeo = new THREE.BoxGeometry(0.6, 0.15, 0.1);
-                const mustache = new THREE.Mesh(mustacheGeo, blackMat);
-                mustache.position.set(0, 1.6, 0.45);
-                group.add(mustache);
-
-                // Очи
+                const mustache = new THREE.Mesh(mustacheGeo, blackMat); mustache.position.set(0, 1.6, 0.45);
                 const eyeGeo = new THREE.BoxGeometry(0.1, 0.2, 0.1);
-                const leftEye = new THREE.Mesh(eyeGeo, blackMat);
-                leftEye.position.set(-0.15, 1.9, 0.41);
-                const rightEye = new THREE.Mesh(eyeGeo, blackMat);
-                rightEye.position.set(0.15, 1.9, 0.41);
-                group.add(leftEye, rightEye);
+                const leftEye = new THREE.Mesh(eyeGeo, blackMat); leftEye.position.set(-0.15, 1.9, 0.41);
+                const rightEye = new THREE.Mesh(eyeGeo, blackMat); rightEye.position.set(0.15, 1.9, 0.41);
+                group.add(nose, mustache, leftEye, rightEye);
 
-                // Шапка (Основа и козирка)
+                // Шапка
                 const hatGeo = new THREE.BoxGeometry(0.85, 0.25, 0.85);
-                const hat = new THREE.Mesh(hatGeo, redMat);
-                hat.position.set(0, 2.3, 0);
+                const hat = new THREE.Mesh(hatGeo, redMat); hat.position.set(0, 2.3, 0);
                 const visorGeo = new THREE.BoxGeometry(0.85, 0.1, 0.4);
-                const visor = new THREE.Mesh(visorGeo, redMat);
-                visor.position.set(0, 2.2, 0.4);
+                const visor = new THREE.Mesh(visorGeo, redMat); visor.position.set(0, 2.2, 0.4);
                 group.add(hat, visor);
 
                 scene.add(group);
                 
-                // Центриране на героя спрямо камерата
                 group.position.y = -1.2;
-                camera.position.z = 6;
+                camera.position.z = 5.5;
 
                 let animationFrameId;
                 const animate3D = function () {
                     animationFrameId = requestAnimationFrame(animate3D);
-                    group.rotation.y += 0.02; // Въртене
+                    group.rotation.y += 0.02; 
                     renderer.render(scene, camera);
                 };
                 animate3D();
@@ -386,13 +354,11 @@
                 });
             } catch (e) {
                 console.error("ThreeJS грешка:", e);
-                const container = document.getElementById('threeCanvasContainer');
-                if(container) container.innerHTML = '<div style="font-size: 100px; margin-top: 20px;">🦸‍♂️</div>';
             }
         }
 
         const MathGen = {
-            // Деление без празни редове
+            // Генерира задача за деление с опашка (БЕЗ ДУПКИ)
             createDivision: function(dividend, divisor) {
                 let cells = [];
                 let divStr = dividend.toString();
@@ -401,17 +367,17 @@
                 let row = 2; 
                 let step = 1;
 
-                // Основен ред (напр. 156 : 3 = )
-                for(let i=0; i<divStr.length; i++) cells.push({row: row, col: i+2, text: divStr[i]});
+                // Ред 2: Задачката (Делимо : Делител =)
+                for(let i=0; i<divStr.length; i++) cells.push({row: row, col: i+2, text: divStr[i], isCondition: true});
                 cells.push({row: row, col: divStr.length+2, text: ':'});
                 let divLen = divisor.toString().length;
-                for(let i=0; i<divLen; i++) cells.push({row: row, col: divStr.length+3+i, text: divisor.toString()[i]});
+                for(let i=0; i<divLen; i++) cells.push({row: row, col: divStr.length+3+i, text: divisor.toString()[i], isCondition: true});
                 cells.push({row: row, col: divStr.length+3+divLen, text: '='});
-                let qStartCol = divStr.length+4+divLen;
                 
-                // Генерираме предварително ВСИЧКИ полета за частното (отговора)
+                // Полета за Частното (винаги ги генерираме още тук)
+                let qStartCol = divStr.length+4+divLen;
                 for(let i=0; i<quotient.length; i++) {
-                     cells.push({row: 2, col: qStartCol + i, input: true, expected: quotient[i], isAnswer: true, tabIndex: step++});
+                     cells.push({row: row, col: qStartCol + i, input: true, expected: quotient[i], isAnswer: true});
                 }
                 
                 row = 3; 
@@ -428,21 +394,20 @@
                         let sub = (q * divisor).toString();
                         let rem = (num - q * divisor);
 
-                        // Частното вече е генерирано горе, така че тук само отчитаме стъпката
-                        qIndex++;
-
-                        // Умалител (на същия ред като минуса)
+                        // Изваждане на същия ред като свалената цифра (чист ред)
                         let subStartCol = endCol - sub.length + 1;
                         cells.push({row: row, col: subStartCol - 1, text: '-'});
-                        for(let j=0; j<sub.length; j++) cells.push({row: row, col: subStartCol + j, input: true, expected: sub[j], tabIndex: step++});
+                        for(let j=0; j<sub.length; j++) cells.push({row: row, col: subStartCol + j, input: true, expected: sub[j]});
                         
-                        // Чертата (дължината се смята само от реалното число, без водещи нули)
-                        let activeLen = num.toString().length; 
+                        // Черта с дължината на реалното число (без скрити нули отпред)
+                        let activeNumStr = parseInt(currentVal).toString();
+                        let activeLen = activeNumStr.length; 
                         if(activeLen === 0) activeLen = 1;
                         let lineSpan = Math.max(activeLen, sub.length);
+                        // Чертата е под изваждането
                         cells.push({row: row, col: endCol - lineSpan + 1, isLine: true, span: lineSpan});
                         
-                        row++; // Веднага на следващия ред за остатъка
+                        row++; // Преминаваме на следващ чист ред за остатъка
 
                         let isFinalStep = (i === divStr.length - 1);
                         let remStr = rem.toString();
@@ -450,97 +415,105 @@
                         let remStartCol = endCol - remStr.length + 1;
 
                         if (remStr !== "") {
-                            for(let j=0; j<remStr.length; j++) cells.push({row: row, col: remStartCol + j, input: true, expected: remStr[j], tabIndex: step++});
+                            for(let j=0; j<remStr.length; j++) cells.push({row: row, col: remStartCol + j, input: true, expected: remStr[j]});
                         }
 
-                        // Сваляне на следваща цифра
+                        // Сваляне на следващата цифра веднага до остатъка (на същия ред)
                         if (!isFinalStep) {
                             let bringDown = divStr[i+1];
-                            cells.push({row: row, col: endCol + 1, input: true, expected: bringDown, tabIndex: step++});
-                            row++; // Увеличаваме реда отново, за да може следващото изваждане да е отдолу!
+                            cells.push({row: row, col: endCol + 1, input: true, expected: bringDown});
+                            row++; 
                         }
 
                         currentVal = remStr;
                         isFirstStep = false;
+                        qIndex++;
                     } else if (!isFirstStep) {
                         qIndex++;
                         if (i < divStr.length - 1) {
                             let nextBringDown = divStr[i+1];
-                            cells.push({row: row - 1, col: endCol + 1, input: true, expected: nextBringDown, tabIndex: step++});
+                            cells.push({row: row - 1, col: endCol + 1, input: true, expected: nextBringDown});
                         }
                     }
                 }
                 return cells;
             },
 
-            // Умножение на един ред
+            // Генерира задача за умножение по БГ стандарт (с изместване наляво)
             createMultiplication: function(num1, num2) {
                 let cells = [];
                 let str1 = num1.toString();
                 let str2 = num2.toString();
+                let ans = (num1 * num2).toString();
                 
-                let maxProdLen = (num1 * num2).toString().length;
-                let extraLeft = Math.max(2, maxProdLen - str1.length + 1); 
-                let startCol = extraLeft + 2; 
-
-                // Ред 1: Полета "Наум" (само над първия множител)
+                let startCol = 4;
+                
+                // Ред 1: Полета "Наум"
                 for(let i=0; i<str1.length; i++) {
                     cells.push({row: 1, col: startCol + i, input: true, isCarry: true, expected: ''});
                 }
                 
-                // Ред 2: Умножение (напр. 34 • 12)
-                for(let i=0; i<str1.length; i++) cells.push({row: 2, col: startCol + i, text: str1[i]});
+                // Ред 2: Умножение (напр. 26 • 24)
+                for(let i=0; i<str1.length; i++) cells.push({row: 2, col: startCol + i, text: str1[i], isCondition: true});
                 
                 let dotCol = startCol + str1.length;
-                cells.push({row: 2, col: dotCol, text: '•'}); // Знак за умножение
+                cells.push({row: 2, col: dotCol, text: '•'}); 
                 
                 let startCol2 = dotCol + 1;
-                for(let i=0; i<str2.length; i++) cells.push({row: 2, col: startCol2 + i, text: str2[i]});
+                for(let i=0; i<str2.length; i++) cells.push({row: 2, col: startCol2 + i, text: str2[i], isCondition: true});
                 
                 let totalLen = str1.length + 1 + str2.length;
                 cells.push({row: 2, col: startCol, isLine: true, span: totalLen});
 
                 let row = 3;
-                let endCol1 = startCol + str1.length - 1;
-                let step = 1;
+                let endCol1 = startCol + str1.length - 1; // Колоната на единиците на първия множител
 
                 if (str2.length === 1) {
-                    let ans = (num1 * num2).toString();
                     for(let i=ans.length-1; i>=0; i--) {
                         let col = endCol1 - ans.length + 1 + i;
-                        cells.push({row: row, col: col, input: true, expected: ans[i], tabIndex: step++});
+                        cells.push({row: row, col: col, input: true, expected: ans[i]});
                     }
                 } else {
                     let partials = [];
-                    // Смятаме първо с най-дясната цифра
+                    // Смятаме първо с единиците (най-дясната цифра на втория множител)
                     for(let i=str2.length-1; i>=0; i--) {
                         let digit = parseInt(str2[i]);
                         let p = (num1 * digit).toString();
                         partials.push(p);
                         
+                        // Изместване наляво: умножението с десетици се мести с 1 позиция, стотици с 2 и т.н.
                         let shift = (str2.length - 1 - i); 
                         
                         for(let j=p.length-1; j>=0; j--) {
                             let col = endCol1 - shift - p.length + 1 + j;
-                            cells.push({row: row, col: col, input: true, expected: p[j], tabIndex: step++});
+                            cells.push({row: row, col: col, input: true, expected: p[j]});
                         }
+                        
+                        // Плюс знак пред последното частично произведение
                         if (i === 0) { 
-                            let col = endCol1 - shift - p.length;
-                            cells.push({row: row, col: col, text: '+'});
+                            let maxPartialLen = Math.max(...partials.map(pr => pr.length));
+                            let plusCol = endCol1 - shift - maxPartialLen;
+                            cells.push({row: row, col: plusCol, text: '+'});
                         }
                         row++;
                     }
                     
-                    let lastPartial = partials[partials.length-1];
                     let maxShift = str2.length - 1;
-                    let leftmostCol = endCol1 - maxShift - lastPartial.length;
+                    let lastPartial = partials[partials.length-1];
+                    let leftmostCol = endCol1 - maxShift - lastPartial.length + 1;
+                    
+                    // Проверка дали плюсът ще е по-наляво от цифрите
+                    let maxPartialLen = Math.max(...partials.map(pr => pr.length));
+                    let plusCol = endCol1 - maxShift - maxPartialLen;
+                    if(plusCol < leftmostCol) leftmostCol = plusCol;
+
                     let rightmostCol = endCol1;
                     cells.push({row: row - 1, col: leftmostCol, isLine: true, span: (rightmostCol - leftmostCol + 1)});
                     
-                    let ans = (num1 * num2).toString();
+                    // Краен резултат
                     for(let i=ans.length-1; i>=0; i--) {
                         let col = endCol1 - ans.length + 1 + i;
-                        cells.push({row: row, col: col, input: true, expected: ans[i], tabIndex: step++});
+                        cells.push({row: row, col: col, input: true, expected: ans[i]});
                     }
                 }
                 return cells;
@@ -567,8 +540,8 @@
                 let isAdvanced = Game.score >= 50; 
 
                 if (type === 'division') {
-                    this.title.innerText = "🍄 ВРАГ: ДЕЛЕНИЕ С ОПАШКА";
-                    this.instruction.innerText = "Раздели числата. Кликни върху цифра, за да поставиш точка за заемане!";
+                    this.title.innerText = "🍄 ЗАДАЧА ЗА ДЕЛЕНИЕ С ОПАШКА";
+                    this.instruction.innerText = "Раздели числата. Кликни върху цифра от условието, за да поставиш точка за заемане.";
                     
                     let divisor, quotient;
                     if (isAdvanced) {
@@ -580,7 +553,7 @@
                     }
                     cellsData = MathGen.createDivision(divisor * quotient, divisor);
                 } else {
-                    this.title.innerText = "❓ БЛОКЧЕ: УМНОЖЕНИЕ";
+                    this.title.innerText = "🟨 ЗАДАЧА ЗА УМНОЖЕНИЕ";
                     this.instruction.innerText = "Умножи числата. Най-горният ред е за числата 'наум'.";
                     
                     if (isAdvanced) {
@@ -603,7 +576,6 @@
                     if (data.span) cell.style.gridColumn = `${data.col} / span ${data.span}`;
 
                     if (data.isLine) {
-                        cell.style.pointerEvents = 'none';
                         let line = document.createElement('div');
                         line.className = 'math-line';
                         cell.appendChild(line);
@@ -614,21 +586,19 @@
                         inp.className = `math-input ${data.isCarry ? 'carry-over' : ''}`;
                         inp.dataset.expected = data.expected;
 
-                        // Автоматичен фокус (Smart Focus) - премества курсора след въвеждане
+                        // Автоматичен курсор
                         inp.addEventListener('input', function() {
                             this.classList.remove('error');
                             if(this.value.length === 1) {
-                                let allInputs = Array.from(MathUI.container.querySelectorAll('.math-input'));
+                                let allInputs = Array.from(MathUI.container.querySelectorAll('.math-input:not(.carry-over)'));
                                 let currentIndex = allInputs.indexOf(this);
-                                for (let i = currentIndex + 1; i < allInputs.length; i++) {
-                                    if (allInputs[i].value === '' && !allInputs[i].classList.contains('carry-over')) {
-                                        allInputs[i].focus();
-                                        break;
-                                    }
+                                if(currentIndex !== -1 && currentIndex + 1 < allInputs.length) {
+                                    allInputs[currentIndex + 1].focus();
                                 }
                             }
                         });
 
+                        // Селектиране на текста при кликване (за лесна поправка)
                         inp.addEventListener('focus', function() {
                             this.select();
                         });
@@ -640,8 +610,8 @@
                         span.style.position = 'relative';
                         span.style.display = 'inline-block';
                         
-                        // Поставяне на червена точка при клик върху цифра
-                        if(/\d/.test(data.text)) {
+                        // Червена точка за заемане при клик върху статични числа
+                        if(data.isCondition && /\d/.test(data.text)) {
                             span.style.cursor = "pointer";
                             span.title = "Кликни за точка (заемане)";
                             span.addEventListener('click', () => {
@@ -657,7 +627,6 @@
                 this.modal.classList.add('flex');
                 setTimeout(() => {
                     this.modal.classList.remove('opacity-0');
-                    // Фокус върху първото поле автоматично
                     let firstInp = this.container.querySelector('.math-input:not(.carry-over)');
                     if(firstInp) firstInp.focus();
                 }, 10);
@@ -668,7 +637,8 @@
                 let allCorrect = true;
 
                 inputs.forEach(inp => {
-                    if (inp.value !== inp.dataset.expected) {
+                    // Ако не е задължително (напр. нули), може да се пропусне, но иначе трябва да е точно
+                    if (inp.value !== inp.dataset.expected && !(inp.dataset.expected === '' && inp.value === '')) {
                         allCorrect = false;
                         inp.classList.add('error');
                         inp.value = '';
@@ -710,7 +680,6 @@
         const ctx = canvas.getContext('2d');
 
         const Game = {
-            // ФИКСИРАНА резолюция за играта (предотвратява бъга с липсващата земя)
             width: 1280,
             height: 720,
             score: 0,
@@ -720,7 +689,6 @@
             lastTime: 0,
 
             init: function() {
-                // Настройваме canvas-а към фиксираната резолюция
                 canvas.width = this.width;
                 canvas.height = this.height;
                 ctx.imageSmoothingEnabled = false;
@@ -757,13 +725,11 @@
                 this.blocks = [];
                 this.enemies = [];
                 
-                // Земя (генерира се спрямо фиксираната височина 720)
                 let groundY = this.height - 40;
                 for(let i=0; i<150; i++) {
                     this.blocks.push({ x: i*40, y: groundY, w: 40, h: 40, type: 'ground' });
                 }
 
-                // Платформи и врагове
                 for(let i=1; i<30; i++) {
                     let startX = i * 400 + Math.random() * 200;
                     this.blocks.push({ x: startX, y: groundY - 150, w: 40, h: 40, type: 'block', hit: false });
@@ -777,7 +743,7 @@
             },
 
             player: {
-                x: 100, y: 100, w: 30, h: 40, vx: 0, vy: 0, speed: 6, jumpForce: -13, grounded: false
+                x: 100, y: 100, w: 30, h: 40, vx: 0, vy: 0, speed: 6, jumpForce: -14, grounded: false
             },
 
             update: function() {
@@ -797,18 +763,18 @@
                 this.player.x += this.player.vx;
                 this.player.y += this.player.vy;
 
-                // Камера
+                // Камерата следва играча
                 if (this.player.x > this.cameraX + this.width / 2.5) {
                     this.cameraX = this.player.x - this.width / 2.5;
                 }
                 if (this.cameraX < 0) this.cameraX = 0;
                 if (this.player.x < 0) this.player.x = 0;
 
-                // Колизии с блокове
                 this.player.grounded = false;
+                // Колизии с блокчета
                 for (let b of this.blocks) {
                     if (this.checkCollision(this.player, b)) {
-                        // Удар отгоре
+                        // Кацане отгоре
                         if (this.player.vy > 0 && this.player.y + this.player.h - this.player.vy <= b.y) {
                             this.player.grounded = true;
                             this.player.vy = 0;
@@ -823,7 +789,7 @@
                                 MathUI.open('multiplication', b);
                             }
                         } 
-                        // Удар отстрани
+                        // Страничен сблъсък
                         else {
                             if (this.player.vx > 0) this.player.x = b.x - this.player.w;
                             if (this.player.vx < 0) this.player.x = b.x + b.w;
@@ -831,11 +797,12 @@
                     }
                 }
 
-                // Врагове
+                // Колизии с врагове
                 for (let e of this.enemies) {
                     if (!e.active) continue;
                     e.x += e.vx;
                     
+                    // Обръщане на посоката при стигане на ръба на платформа
                     for (let b of this.blocks) {
                         if (b.y <= e.y && this.checkCollision(e, b)) {
                             e.vx *= -1;
@@ -846,11 +813,11 @@
                     if (this.checkCollision(this.player, e)) {
                         this.paused = true;
                         MathUI.open('division', e);
-                        this.player.x -= 15; // Отместване назад след удар
+                        this.player.x -= 15; // Отместване за да не заклещи
                     }
                 }
 
-                // Пропадане (ако се случи)
+                // Падане в дупка
                 if (this.player.y > this.height) {
                     this.player.x = this.cameraX + 100;
                     this.player.y = 100;
@@ -871,7 +838,7 @@
                 ctx.save();
                 ctx.translate(-this.cameraX, 0);
 
-                // Блокове
+                // Земя и блокчета
                 for (let b of this.blocks) {
                     if (b.type === 'ground') {
                         ctx.fillStyle = '#c84c0c';
@@ -879,33 +846,29 @@
                         ctx.fillStyle = '#fc9838';
                         ctx.fillRect(b.x, b.y, b.w, 4);
                     } else if (b.type === 'brick') {
-                        ctx.fillStyle = '#a0522d'; // По-тъмно кафяво
+                        // Тухли с шарка
+                        ctx.fillStyle = '#c84c0c';
                         ctx.fillRect(b.x, b.y, b.w, b.h);
                         ctx.strokeStyle = '#000';
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
-                        // Шарка на тухла
                         ctx.beginPath();
-                        ctx.moveTo(b.x, b.y + b.h/2);
-                        ctx.lineTo(b.x + b.w, b.y + b.h/2);
-                        ctx.moveTo(b.x + b.w/2, b.y);
-                        ctx.lineTo(b.x + b.w/2, b.y + b.h/2);
-                        ctx.moveTo(b.x + b.w/4, b.y + b.h/2);
-                        ctx.lineTo(b.x + b.w/4, b.y + b.h);
-                        ctx.moveTo(b.x + b.w*0.75, b.y + b.h/2);
-                        ctx.lineTo(b.x + b.w*0.75, b.y + b.h);
+                        ctx.moveTo(b.x, b.y + b.h/2); ctx.lineTo(b.x + b.w, b.y + b.h/2);
+                        ctx.moveTo(b.x + b.w/2, b.y); ctx.lineTo(b.x + b.w/2, b.y + b.h/2);
+                        ctx.moveTo(b.x + b.w/4, b.y + b.h/2); ctx.lineTo(b.x + b.w/4, b.y + b.h);
+                        ctx.moveTo(b.x + b.w*0.75, b.y + b.h/2); ctx.lineTo(b.x + b.w*0.75, b.y + b.h);
                         ctx.stroke();
                     } else if (b.type === 'block') {
-                        ctx.fillStyle = b.hit ? '#a0522d' : '#ffd700'; // Жълто за активно, кафяво за ударено
+                        // Жълти блокчета със задачи
+                        ctx.fillStyle = b.hit ? '#c84c0c' : '#ffd700'; 
                         ctx.fillRect(b.x, b.y, b.w, b.h);
                         ctx.strokeStyle = '#000';
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
                         if (!b.hit) {
-                            // Очички на блокчето като в Марио
                             ctx.fillStyle = '#000';
                             ctx.fillRect(b.x + 6, b.y + 6, 4, 4);
                             ctx.fillRect(b.x + b.w - 10, b.y + 6, 4, 4);
                             
-                            ctx.fillStyle = '#d2691e'; // Тъмно оранжево за питанката
+                            ctx.fillStyle = '#d2691e'; 
                             ctx.font = 'bold 28px "Impact"';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
@@ -914,7 +877,7 @@
                     }
                 }
 
-                // Врагове
+                // Врагове (Гъби)
                 for (let e of this.enemies) {
                     if (e.active) {
                         ctx.fillStyle = '#e84c0c';
@@ -923,19 +886,18 @@
                         ctx.fill();
                         ctx.fillStyle = '#fff';
                         ctx.fillRect(e.x + 5, e.y + e.h - 10, e.w - 10, 10);
-                        // Очи
                         ctx.fillStyle = '#000';
                         ctx.fillRect(e.x + 8, e.y + e.h - 15, 4, 8);
                         ctx.fillRect(e.x + 18, e.y + e.h - 15, 4, 8);
                     }
                 }
 
-                // Играч
-                ctx.fillStyle = '#ff0000';
+                // Играч (Марио)
+                ctx.fillStyle = '#ff0000'; // Шапка
                 ctx.fillRect(this.player.x + 5, this.player.y, 20, 15);
-                ctx.fillStyle = '#ffcc99'; 
+                ctx.fillStyle = '#ffcc99'; // Лице
                 ctx.fillRect(this.player.x + 5, this.player.y + 15, 20, 10);
-                ctx.fillStyle = '#0000ff'; 
+                ctx.fillStyle = '#0000ff'; // Гащеризон
                 ctx.fillRect(this.player.x, this.player.y + 25, 30, 15);
 
                 ctx.restore();
