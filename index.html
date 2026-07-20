@@ -421,7 +421,7 @@
         };
 
         const MathGen = {
-            createDivision: function(dividend, divisor) {
+            createDivision: function(dividend, divisor, requireCalc) {
                 let cells = [];
                 let divStr = dividend.toString();
                 let quotient = (dividend / divisor).toString();
@@ -461,7 +461,11 @@
                         
                         for(let j=0; j<subVal.length; j++) {
                             let col = endCol - subVal.length + 1 + j;
-                            cells.push({row: row, col: col, text: subVal[j]});
+                            if (requireCalc) {
+                                cells.push({row: row, col: col, input: true, expected: subVal[j], tabIndex: step++});
+                            } else {
+                                cells.push({row: row, col: col, text: subVal[j]});
+                            }
                         }
                         
                         cells.push({row: row, col: endCol - subVal.length + 1, isLine: true, span: subVal.length});
@@ -582,6 +586,7 @@
             instruction: document.getElementById('mathInstruction'),
             btnCheck: document.getElementById('checkBtn'),
             currentEnemyOrBlock: null,
+            divisionCount: 0,
 
             init: function() {
                 this.btnCheck.addEventListener('click', () => this.validate());
@@ -595,18 +600,23 @@
                 let isAdvanced = Game.score >= 50; 
 
                 if (type === 'division') {
+                    this.divisionCount++;
+                    let requireCalc = this.divisionCount > 1;
+
                     this.title.innerText = "🍄 ЗАДАЧА ЗА ДЕЛЕНИЕ С ОПАШКА";
-                    this.instruction.innerText = "Раздели числата. Кликни върху цифра от условието, за да поставиш точка за заемане!";
-                    
+                    this.instruction.innerText = requireCalc
+                        ? "Раздели числата. Пресметни и напиши числото за изваждане под чертата! Кликни върху цифра от условието, за да поставиш точка за заемане!"
+                        : "Раздели числата. Кликни върху цифра от условието, за да поставиш точка за заемане!";
+
                     let divisor, quotient;
                     if (isAdvanced) {
-                        divisor = Math.floor(Math.random() * 80) + 11; 
+                        divisor = Math.floor(Math.random() * 80) + 11;
                         quotient = Math.floor(Math.random() * 90) + 11;
                     } else {
                         divisor = Math.random() < 0.7 ? Math.floor(Math.random() * 8) + 2 : Math.floor(Math.random() * 10) + 11;
-                        quotient = Math.floor(Math.random() * 90) + 11; 
+                        quotient = Math.floor(Math.random() * 90) + 11;
                     }
-                    cellsData = MathGen.createDivision(divisor * quotient, divisor);
+                    cellsData = MathGen.createDivision(divisor * quotient, divisor, requireCalc);
                 } else {
                     this.title.innerText = "🟨 ЗАДАЧА ЗА УМНОЖЕНИЕ";
                     this.instruction.innerText = "Умножи числата. Най-горният ред е за числата 'наум'.";
@@ -631,6 +641,7 @@
                     if (data.span) cell.style.gridColumn = `${data.col} / span ${data.span}`;
 
                     if (data.isLine) {
+                        cell.style.pointerEvents = 'none';
                         let line = document.createElement('div');
                         line.className = 'math-line';
                         cell.appendChild(line);
